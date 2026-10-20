@@ -1,0 +1,489 @@
+{% comment %}
+  Renders the reusable jewelry personalization fields inside an existing product form.
+
+  Accepts:
+  - product: {Object} Product Liquid object
+  - product_form_id: {String} Existing product form ID
+  - section_id: {String} Section ID
+  - block_id: {String} Buy-buttons block ID
+{% endcomment %}
+
+{%- if product.metafields.custom.enable_jewelry_personalizer.value == true -%}
+  {%- liquid
+    assign maximum_characters = product.metafields.custom.maximum_characters.value | default: 12
+    if maximum_characters < 1
+      assign maximum_characters = 1
+    elsif maximum_characters > 100
+      assign maximum_characters = 100
+    endif
+
+    assign minimum_characters = product.metafields.custom.minimum_characters.value | default: 1
+    if minimum_characters < 1
+      assign minimum_characters = 1
+    elsif minimum_characters > maximum_characters
+      assign minimum_characters = maximum_characters
+    endif
+
+    assign preview_x = product.metafields.custom.preview_x.value | default: 50
+    if preview_x < 0
+      assign preview_x = 0
+    elsif preview_x > 100
+      assign preview_x = 100
+    endif
+
+    assign preview_y = product.metafields.custom.preview_y.value | default: 50
+    if preview_y < 0
+      assign preview_y = 0
+    elsif preview_y > 100
+      assign preview_y = 100
+    endif
+
+    assign preview_font_size = product.metafields.custom.preview_font_size.value | default: 64
+    if preview_font_size < 8
+      assign preview_font_size = 8
+    elsif preview_font_size > 200
+      assign preview_font_size = 200
+    endif
+
+    assign preview_rotation = product.metafields.custom.preview_rotation.value | default: 0
+    if preview_rotation < -180
+      assign preview_rotation = -180
+    elsif preview_rotation > 180
+      assign preview_rotation = 180
+    endif
+
+    assign preview_max_width = product.metafields.custom.preview_max_width.value | default: 450
+    if preview_max_width < 50
+      assign preview_max_width = 50
+    elsif preview_max_width > 1000
+      assign preview_max_width = 1000
+    endif
+
+    assign requested_type = product.metafields.custom.personalizer_type.value | default: 'name' | downcase
+    case requested_type
+      when 'name', 'initials', 'engraving', 'date', 'coordinates', 'double_name'
+        assign personalizer_type = requested_type
+      else
+        assign personalizer_type = 'name'
+    endcase
+
+    assign default_preview_text = product.metafields.custom.default_preview_text.value | default: 'Your Name'
+    assign allowed_characters = product.metafields.custom.allowed_characters.value | default: 'letters_spaces_hyphens_apostrophes'
+    assign personalizer_help_text = product.metafields.custom.personalizer_help_text.value
+    assign configured_fonts = product.metafields.custom.personalizer_fonts.value
+
+    assign signature_enabled = false
+    assign classic_enabled = false
+    assign modern_enabled = false
+    assign elegant_enabled = false
+
+    if configured_fonts == blank
+      assign classic_enabled = true
+    else
+      if configured_fonts contains 'Signature'
+        assign signature_enabled = true
+      endif
+      if configured_fonts contains 'Classic'
+        assign classic_enabled = true
+      endif
+      if configured_fonts contains 'Modern'
+        assign modern_enabled = true
+      endif
+      if configured_fonts contains 'Elegant'
+        assign elegant_enabled = true
+      endif
+    endif
+
+    unless signature_enabled or classic_enabled or modern_enabled or elegant_enabled
+      assign classic_enabled = true
+    endunless
+
+    capture available_fonts
+      if signature_enabled
+        echo 'Signature|'
+      endif
+      if classic_enabled
+        echo 'Classic|'
+      endif
+      if modern_enabled
+        echo 'Modern|'
+      endif
+      if elegant_enabled
+        echo 'Elegant|'
+      endif
+    endcapture
+
+    assign configured_material_option_name = product.metafields.custom.material_option_name.value | default: 'Metal' | strip
+    assign normalized_material_option_name = configured_material_option_name | downcase
+    assign material_option = null
+
+    for product_option in product.options_with_values
+      assign normalized_product_option_name = product_option.name | strip | downcase
+      if normalized_product_option_name == normalized_material_option_name
+        assign material_option = product_option
+        break
+      endif
+    endfor
+
+    unless material_option
+      assign fallback_material_option_names = 'metal|material|color|colour|finish' | split: '|'
+      for fallback_option_name in fallback_material_option_names
+        for product_option in product.options_with_values
+          assign normalized_product_option_name = product_option.name | strip | downcase
+          if normalized_product_option_name == fallback_option_name
+            assign material_option = product_option
+            break
+          endif
+        endfor
+        if material_option
+          break
+        endif
+      endfor
+    endunless
+
+    assign configured_materials = product.metafields.custom.personalizer_materials.value
+    assign recognized_material_values = '|gold|yellow gold|gold plated|14k gold|18k gold|silver|sterling silver|925 silver|white silver|rose gold|rose-gold|rosegold|rose gold plated|'
+    assign material_values_count = 0
+
+    if material_option
+      for material_value in material_option.values
+        assign normalized_material_value = material_value | strip | downcase
+        assign material_value_token = '|' | append: normalized_material_value | append: '|'
+        assign material_value_allowed = false
+        assign material_category = 'neutral'
+
+        case normalized_material_value
+          when 'gold', 'yellow gold', 'gold plated', '14k gold', '18k gold'
+            assign material_category = 'gold'
+          when 'silver', 'sterling silver', '925 silver', 'white silver'
+            assign material_category = 'silver'
+          when 'rose gold', 'rose-gold', 'rosegold', 'rose gold plated'
+            assign material_category = 'rose-gold'
+        endcase
+
+        if recognized_material_values contains material_value_token
+          if configured_materials == blank
+            assign material_value_allowed = true
+          else
+            for configured_material in configured_materials
+              assign normalized_configured_material = configured_material | strip | downcase
+              if normalized_configured_material == normalized_material_value
+                assign material_value_allowed = true
+                break
+              elsif normalized_configured_material == 'gold' and material_category == 'gold'
+                assign material_value_allowed = true
+                break
+              elsif normalized_configured_material == 'silver' and material_category == 'silver'
+                assign material_value_allowed = true
+                break
+              elsif normalized_configured_material == 'rose gold' and material_category == 'rose-gold'
+                assign material_value_allowed = true
+                break
+              endif
+            endfor
+          endif
+        endif
+
+        if material_value_allowed
+          assign material_values_count = material_values_count | plus: 1
+        endif
+      endfor
+    endif
+
+    assign personalizer_id = section_id | append: '-' | append: block_id | append: '-' | append: product.id
+  -%}
+
+  {{ 'component-jewelry-personalizer.css' | asset_url | stylesheet_tag }}
+  <script src='{{ 'jewelry-personalizer.js' | asset_url }}' defer='defer'></script>
+
+  <jewelry-personalizer
+    class='jewelry-personalizer'
+    data-instance-id='{{ personalizer_id | escape }}'
+    data-form-id='{{ product_form_id | escape }}'
+    data-personalizer-type='{{ personalizer_type | escape }}'
+    data-maximum-characters='{{ maximum_characters }}'
+    data-minimum-characters='{{ minimum_characters }}'
+    data-preview-x='{{ preview_x }}'
+    data-preview-y='{{ preview_y }}'
+    data-preview-font-size='{{ preview_font_size }}'
+    data-preview-rotation='{{ preview_rotation }}'
+    data-preview-max-width='{{ preview_max_width }}'
+    data-default-preview-text='{{ default_preview_text | escape }}'
+    data-allowed-characters='{{ allowed_characters | escape }}'
+    data-fonts='{{ available_fonts | strip | escape }}'
+    data-help-text='{{ personalizer_help_text | strip_newlines | escape }}'
+    data-material-option-name='{{ material_option.name | escape }}'
+    data-material-option-position='{{ material_option.position }}'
+  >
+    <template data-jewelry-preview-template>
+      <svg
+        id='JewelryPreviewSvg-{{ personalizer_id }}'
+        class='jewelry-personalizer__preview-svg'
+        viewBox='0 0 1000 1000'
+        preserveAspectRatio='xMidYMid meet'
+        aria-hidden='true'
+        focusable='false'
+        data-jewelry-preview-svg
+      >
+        <defs>
+          <filter
+            id='JewelryPreviewShadow-{{ personalizer_id }}'
+            x='-20%'
+            y='-20%'
+            width='140%'
+            height='140%'
+          >
+            <feDropShadow dx='0' dy='2' stdDeviation='2' flood-color='#000000' flood-opacity='0.22'></feDropShadow>
+          </filter>
+          <linearGradient
+            id='JewelryPreviewGold-{{ personalizer_id }}'
+            x1='0%'
+            y1='0%'
+            x2='100%'
+            y2='0%'
+            data-jewelry-material-gradient='gold'
+          >
+            <stop offset='0%' stop-color='#B9892E'></stop>
+            <stop offset='30%' stop-color='#DDB95E'></stop>
+            <stop offset='50%' stop-color='#FFF0B8'></stop>
+            <stop offset='70%' stop-color='#F8D982'></stop>
+            <stop offset='100%' stop-color='#C99A38'></stop>
+          </linearGradient>
+          <linearGradient
+            id='JewelryPreviewSilver-{{ personalizer_id }}'
+            x1='0%'
+            y1='0%'
+            x2='100%'
+            y2='0%'
+            data-jewelry-material-gradient='silver'
+          >
+            <stop offset='0%' stop-color='#AAB5BF'></stop>
+            <stop offset='34%' stop-color='#DCE2E7'></stop>
+            <stop offset='52%' stop-color='#FFFFFF'></stop>
+            <stop offset='72%' stop-color='#E5EAEE'></stop>
+            <stop offset='100%' stop-color='#A7B2BC'></stop>
+          </linearGradient>
+          <linearGradient
+            id='JewelryPreviewRoseGold-{{ personalizer_id }}'
+            x1='0%'
+            y1='0%'
+            x2='100%'
+            y2='0%'
+            data-jewelry-material-gradient='rose-gold'
+          >
+            <stop offset='0%' stop-color='#B9786A'></stop>
+            <stop offset='34%' stop-color='#DFA594'></stop>
+            <stop offset='52%' stop-color='#FFE2D8'></stop>
+            <stop offset='72%' stop-color='#E8B0A0'></stop>
+            <stop offset='100%' stop-color='#C98979'></stop>
+          </linearGradient>
+        </defs>
+        <g
+          filter='url(#JewelryPreviewShadow-{{ personalizer_id }})'
+          data-jewelry-preview-group
+        >
+          <g data-jewelry-depth-group>
+            {%- for depth_layer in (1..4) -%}
+              <text
+                id='JewelryPreviewDepth{{ depth_layer }}-{{ personalizer_id }}'
+                class='jewelry-personalizer__nameplate-layer jewelry-personalizer__preview-depth'
+                x='500'
+                y='500'
+                text-anchor='middle'
+                dominant-baseline='middle'
+                data-jewelry-depth-layer='{{ depth_layer }}'
+              ></text>
+            {%- endfor -%}
+          </g>
+          <text
+            id='JewelryPreviewOutline-{{ personalizer_id }}'
+            class='jewelry-personalizer__nameplate-layer jewelry-personalizer__preview-outline'
+            x='500'
+            y='500'
+            text-anchor='middle'
+            dominant-baseline='middle'
+            data-jewelry-preview-outline
+          ></text>
+          <text
+            id='JewelryPreviewText-{{ personalizer_id }}'
+            class='jewelry-personalizer__nameplate-layer jewelry-personalizer__preview-text'
+            x='500'
+            y='500'
+            text-anchor='middle'
+            dominant-baseline='middle'
+            data-jewelry-preview-text
+          ></text>
+          <text
+            id='JewelryPreviewHighlight-{{ personalizer_id }}'
+            class='jewelry-personalizer__nameplate-layer jewelry-personalizer__preview-highlight'
+            x='500'
+            y='500'
+            text-anchor='middle'
+            dominant-baseline='middle'
+            data-jewelry-preview-highlight
+          ></text>
+        </g>
+      </svg>
+    </template>
+
+    <div class='jewelry-personalizer__heading'>Personalize your jewelry</div>
+
+    <div class='jewelry-personalizer__field'>
+      <label class='form__label' for='JewelryPersonalizerName-{{ personalizer_id }}'>
+        Personalized name <span aria-hidden='true'>*</span>
+      </label>
+      <div class='field'>
+        <input
+          id='JewelryPersonalizerName-{{ personalizer_id }}'
+          class='jewelry-personalizer__input field__input'
+          type='text'
+          name='properties[Personalized Name]'
+          minlength='{{ minimum_characters }}'
+          maxlength='{{ maximum_characters }}'
+          autocomplete='off'
+          required
+          aria-describedby='JewelryPersonalizerCounter-{{ personalizer_id }} JewelryPersonalizerError-{{ personalizer_id }}{% if personalizer_help_text != blank %} JewelryPersonalizerHelp-{{ personalizer_id }}{% endif %}'
+        >
+      </div>
+      <div
+        id='JewelryPersonalizerCounter-{{ personalizer_id }}'
+        class='jewelry-personalizer__counter caption'
+        aria-live='polite'
+      >
+        <span data-character-count>0</span>/{{ maximum_characters }} characters
+      </div>
+      {%- if personalizer_help_text != blank -%}
+        <p
+          id='JewelryPersonalizerHelp-{{ personalizer_id }}'
+          class='jewelry-personalizer__help caption'
+          data-help-text
+        >
+          {{- personalizer_help_text | escape | newline_to_br -}}
+        </p>
+      {%- endif -%}
+      <p
+        id='JewelryPersonalizerError-{{ personalizer_id }}'
+        class='jewelry-personalizer__error form__message'
+        role='alert'
+        hidden
+      >
+        Please enter a name before adding this item to your cart.
+      </p>
+    </div>
+
+    <div class='jewelry-personalizer__field'>
+      <label class='form__label' for='JewelryPersonalizerFont-{{ personalizer_id }}'>Font</label>
+      <div class='select'>
+        <select
+          id='JewelryPersonalizerFont-{{ personalizer_id }}'
+          class='jewelry-personalizer__select select__select'
+          name='properties[Font]'
+        >
+          {%- if signature_enabled -%}
+            <option value='Signature'>Signature</option>
+          {%- endif -%}
+          {%- if classic_enabled -%}
+            <option value='Classic'>Classic</option>
+          {%- endif -%}
+          {%- if modern_enabled -%}
+            <option value='Modern'>Modern</option>
+          {%- endif -%}
+          {%- if elegant_enabled -%}
+            <option value='Elegant'>Elegant</option>
+          {%- endif -%}
+        </select>
+        <span class='svg-wrapper'>
+          {{- 'icon-caret.svg' | inline_asset_content -}}
+        </span>
+      </div>
+    </div>
+
+    {%- if material_option and material_values_count > 0 -%}
+      <fieldset class='jewelry-personalizer__materials' data-jewelry-materials>
+        <legend class='form__label'>{{ material_option.name | escape }}</legend>
+        <div class='jewelry-personalizer__material-options'>
+          {%- for material_value in material_option.values -%}
+            {%- liquid
+              assign normalized_material_value = material_value | strip | downcase
+              assign material_value_token = '|' | append: normalized_material_value | append: '|'
+              assign material_value_allowed = false
+              assign material_category = 'neutral'
+
+              if recognized_material_values contains material_value_token
+                if configured_materials == blank
+                  assign material_value_allowed = true
+                else
+                  for configured_material in configured_materials
+                    assign normalized_configured_material = configured_material | strip | downcase
+                    if normalized_configured_material == normalized_material_value
+                      assign material_value_allowed = true
+                      break
+                    elsif normalized_configured_material == 'gold' and material_category == 'gold'
+                      assign material_value_allowed = true
+                      break
+                    elsif normalized_configured_material == 'silver' and material_category == 'silver'
+                      assign material_value_allowed = true
+                      break
+                    elsif normalized_configured_material == 'rose gold' and material_category == 'rose-gold'
+                      assign material_value_allowed = true
+                      break
+                    endif
+                  endfor
+                endif
+              endif
+
+              case normalized_material_value
+                when 'gold', 'yellow gold', 'gold plated', '14k gold', '18k gold'
+                  assign material_category = 'gold'
+                when 'silver', 'sterling silver', '925 silver', 'white silver'
+                  assign material_category = 'silver'
+                when 'rose gold', 'rose-gold', 'rosegold', 'rose gold plated'
+                  assign material_category = 'rose-gold'
+              endcase
+            -%}
+
+            {%- if material_value_allowed -%}
+              <div class='jewelry-personalizer__material-option'>
+                <input
+                  id='JewelryMaterial-{{ personalizer_id }}-{{ forloop.index0 }}'
+                  class='jewelry-personalizer__material-input'
+                  type='radio'
+                  name='JewelryMaterial-{{ personalizer_id }}'
+                  value='{{ material_value | escape }}'
+                  data-material-category='{{ material_category }}'
+                  data-material-state='{% if material_value.available %}available{% else %}unavailable{% endif %}'
+                  {% if material_value.selected %}
+                    checked
+                  {% endif %}
+                  {% unless material_value.available %}
+                    disabled
+                  {% endunless %}
+                >
+                <label
+                  class='jewelry-personalizer__material-label'
+                  for='JewelryMaterial-{{ personalizer_id }}-{{ forloop.index0 }}'
+                >
+                  <span
+                    class='jewelry-personalizer__material-swatch'
+                    data-material-category='{{ material_category }}'
+                    aria-hidden='true'
+                  ></span>
+                  <span>{{ material_value | escape }}</span>
+                  {%- unless material_value.available -%}
+                    <span class='visually-hidden'>Unavailable</span>
+                  {%- endunless -%}
+                </label>
+              </div>
+            {%- endif -%}
+          {%- endfor -%}
+        </div>
+      </fieldset>
+      <input
+        type='hidden'
+        name='properties[Material]'
+        value='{{ material_option.selected_value | escape }}'
+        data-jewelry-material-property
+      >
+    {%- endif -%}
+  </jewelry-personalizer>
+{%- endif -%}

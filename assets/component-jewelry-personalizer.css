@@ -1,0 +1,164 @@
+.jewelry-personalizer {
+  display: block;
+  max-width: 100%;
+  margin: 0 0 2rem;
+  overflow: visible;
+}
+
+.jewelry-personalizer__heading {
+  margin-bottom: 1.2rem;
+  font-size: 1.8rem;
+  font-weight: 600;
+}
+
+.jewelry-personalizer__field + .jewelry-personalizer__field {
+  margin-top: 1.6rem;
+}
+
+.jewelry-personalizer__input {
+  width: 100%;
+  margin: var(--inputs-border-width);
+}
+
+.jewelry-personalizer__counter {
+  margin-top: 0.4rem;
+  text-align: right;
+}
+
+.jewelry-personalizer__help {
+  margin: 0.6rem 0 0;
+  color: rgba(var(--color-foreground), 0.75);
+  overflow-wrap: anywhere;
+}
+
+.jewelry-personalizer__error {
+  display: flex;
+  margin: 0.6rem 0 0;
+  color: rgb(var(--color-foreground));
+}
+
+.jewelry-personalizer__error[hidden] {
+  display: none;
+}
+
+.jewelry-personalizer__input[aria-invalid='true'] {
+  box-shadow: 0 0 0 0.2rem rgb(var(--color-foreground));
+}
+
+.jewelry-personalizer__media {
+  position: relative;
+}
+
+.jewelry-personalizer__preview-svg {
+  display: block;
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.jewelry-personalizer__nameplate-layer {
+  paint-order: stroke fill;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
+.jewelry-personalizer__materials {
+  min-width: 0;
+  margin: 1.6rem 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.jewelry-personalizer__material-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  max-width: 100%;
+}
+
+.jewelry-personalizer__material-option {
+  position: relative;
+  min-width: 0;
+}
+
+.jewelry-personalizer__material-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.jewelry-personalizer__material-label {
+  display: inline-flex;
+  align-items: center;
+  min-height: 4.4rem;
+  padding: 0.8rem 1.2rem;
+  border: 0.1rem solid rgba(var(--color-foreground), 0.3);
+  border-radius: var(--buttons-radius-outset);
+  color: rgb(var(--color-foreground));
+  cursor: pointer;
+  gap: 0.7rem;
+  line-height: 1.2;
+}
+
+.jewelry-personalizer__material-input:not(:disabled) + .jewelry-personalizer__material-label:hover {
+  border-color: rgba(var(--color-foreground), 0.65);
+}
+
+.jewelry-personalizer__material-input:focus-visible + .jewelry-personalizer__material-label {
+  outline: 0.2rem solid rgb(var(--color-foreground));
+  outline-offset: 0.2rem;
+}
+
+.jewelry-personalizer__material-input:checked + .jewelry-personalizer__material-label {
+  border-color: rgb(var(--color-foreground));
+  background: rgb(var(--color-foreground));
+  color: rgb(var(--color-background));
+}
+
+.jewelry-personalizer__material-input:disabled + .jewelry-personalizer__material-label {
+  opacity: 0.48;
+  cursor: not-allowed;
+  text-decoration: line-through;
+}
+
+.jewelry-personalizer__material-swatch {
+  flex: 0 0 auto;
+  width: 1.8rem;
+  height: 1.8rem;
+  border: 0.1rem solid rgba(var(--color-foreground), 0.25);
+  border-radius: 50%;
+  background: rgba(var(--color-foreground), 0.12);
+}
+
+.jewelry-personalizer__material-swatch[data-material-category='gold'] {
+  background: linear-gradient(135deg, #8a641f, #fff0a3 50%, #bd8727);
+}
+
+.jewelry-personalizer__material-swatch[data-material-category='silver'] {
+  background: linear-gradient(135deg, #77828c, #ffffff 50%, #aeb8c1);
+}
+
+.jewelry-personalizer__material-swatch[data-material-category='rose-gold'] {
+  background: linear-gradient(135deg, #94594f, #f3c0b0 50%, #c17a69);
+}
+
+.jewelry-personalizer-native-material-source {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  clip-path: inset(50%) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
